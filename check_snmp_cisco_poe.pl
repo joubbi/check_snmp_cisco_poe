@@ -112,7 +112,7 @@ sub p_version {
 
 # Subroutine: Print Usage
 sub print_usage {
-    print "Usage: $0 [-v] -H <host> [-6] -C <snmp_community> [-2]  -w <warning threshold in watt> -c <critical threshold in watt> | (-l login -x passwd [-X pass -L <authp>,<privp>])  [-p <port>] [-t <timeout>] [-V]\n";
+    print "Usage: $0 [-v] -H <host> [-6] -C <snmp_community> [-2]  -w <warning threshold in Watt> -c <critical threshold in Watt> | (-l login -x passwd [-X pass -L <authp>,<privp>])  [-p <port>] [-t <timeout>] [-V]\n";
 }
 
 # Subroutine: Check number
