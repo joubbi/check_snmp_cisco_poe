@@ -433,10 +433,10 @@ if (defined($cisco_pethMainPseEntry)) {
 						}
 
 						if ($output eq ""){
-							$output = "Module:".$module." Available:".$pethMainPsePower." W Used:".$pethMainPseConsumptionPower." W Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
+							$output = "Module:".$module." Available:".$pethMainPsePower." W, Used:".$pethMainPseConsumptionPower." W, Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
 							$output_pd = " | M".$module."_Used=".$pethMainPseConsumptionPower.";".($pethMainPsePower - $o_warning).";".($pethMainPsePower - $o_critical).";0;".$pethMainPsePower;
 						}else{
-							$output.= " - Module:".$module." Available:".$pethMainPsePower." W Used:".$pethMainPseConsumptionPower." W Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
+							$output.= " - Module:".$module." Available:".$pethMainPsePower." W, Used:".$pethMainPseConsumptionPower." W, Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
 							$output_pd.= " M".$module."_Used=".$pethMainPseConsumptionPower.";".($pethMainPsePower - $o_warning).";".($pethMainPsePower - $o_critical).";0;".$pethMainPsePower;
 						}
 					}
