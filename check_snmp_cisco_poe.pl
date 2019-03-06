@@ -3,8 +3,8 @@
 # ============================== INFO ========================================
 # ============================================================================
 # Version	: 0.3
-# Date		: June 7 2017
-# Author	: Michiel Timmers ( michiel.timmers AT gmx.net)
+# Date		: March 6 2019
+# Author	: Michiel Timmers ( michiel.timmers AT gmx.net) +Farid Joubbi
 # Licence 	: GPL - summary below
 #
 # ============================================================================
@@ -55,6 +55,7 @@ use Scalar::Util qw(looks_like_number);
 #use lib "/usr/local/nagios/libexec";
 #use utils qw(%ERRORS $TIMEOUT);
 
+
 # ============================================================================
 # ============================== NAGIOS VARIABLES ============================
 # ============================================================================
@@ -73,7 +74,6 @@ my $cisco_pethMainPseEntry_oid     		= "1.3.6.1.2.1.105.1.3.1.1"; 	# pethMainPse
 my $cisco_pethMainPsePower_oid     		= "1.3.6.1.2.1.105.1.3.1.1.2";	# pethMainPsePower
 my $cisco_pethMainPseOperStatus_oid     	= "1.3.6.1.2.1.105.1.3.1.1.3";	# pethMainPseOperStatus
 my $cisco_pethMainPseConsumptionPower_oid	= "1.3.6.1.2.1.105.1.3.1.1.4";	# pethMainPseConsumptionPower
-
 
 
 # ============================================================================
