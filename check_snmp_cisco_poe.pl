@@ -163,9 +163,9 @@ Options:
 -C, --community=COMMUNITY NAME
    Community name for the host's SNMP agent
 -w, --warning=WATT
-   Warning threshold in watt
+   Warning threshold in Watt
 -c, --critical=WATT
-   Critical threshold in watt
+   Critical threshold in Watt
 -1, --v1
    Use SNMPv1
 -2, --v2c
@@ -297,6 +297,7 @@ sub check_options {
 	}
 }
 
+
 # ============================================================================
 # ============================== MAIN ========================================
 # ============================================================================
@@ -383,6 +384,7 @@ if (!defined($session)) {
 }
 
 my $exit_val=undef;
+
 
 # ============================================================================
 # ============================== Cisco - PoE =================================
