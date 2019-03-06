@@ -2,7 +2,7 @@
 # ============================================================================
 # ============================== INFO ========================================
 # ============================================================================
-# Version	: 0.2
+# Version	: 0.3
 # Date		: June 7 2017
 # Author	: Michiel Timmers ( michiel.timmers AT gmx.net)
 # Licence 	: GPL - summary below
@@ -12,6 +12,9 @@
 # ============================================================================
 #
 # Check the PoE availability of a Cisco switch
+# version 0.3 By farid@joubbi.se:
+# - Added performace data
+# - Small modifications of output
 #
 # version 0.2:
 # - fix for Cisco bug CSCtl11469. Data is now collected via a snmpwalk
@@ -77,7 +80,7 @@ my $cisco_pethMainPseConsumptionPower_oid	= "1.3.6.1.2.1.105.1.3.1.1.4";	# pethM
 # ============================== GLOBAL VARIABLES ============================
 # ============================================================================
 
-my $Version		= '0.2';	# Version number of this script
+my $Version		= '0.3';	# Version number of this script
 my $o_host		= undef; 	# Hostname
 my $o_community 	= undef; 	# Community
 my $o_port	 	= 161; 		# Port
@@ -387,6 +390,7 @@ my $exit_val=undef;
 
 # Define variables
 my $output			= "";			
+my $output_pd			= "";
 my $final_status		= 0;
 my $result_t;
 my $index;
@@ -427,9 +431,11 @@ if (defined($cisco_pethMainPseEntry)) {
 						}
 
 						if ($output eq ""){
-							$output = "Module:".$module." Available:".$pethMainPsePower."(w) Used:".$pethMainPseConsumptionPower."(w) Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)."(w)";
+							$output = "Module:".$module." Available:".$pethMainPsePower." W Used:".$pethMainPseConsumptionPower." W Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
+							$output_pd = " | M".$module."_Used=".$pethMainPseConsumptionPower.";".($pethMainPsePower - $o_warning).";".($pethMainPsePower - $o_critical).";0;".$pethMainPsePower;
 						}else{
-							$output.= " - Module:".$module." Available:".$pethMainPsePower."(w) Used:".$pethMainPseConsumptionPower."(w) Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)."(w)";
+							$output.= " - Module:".$module." Available:".$pethMainPsePower." W Used:".$pethMainPseConsumptionPower." W Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
+							$output_pd.= " M".$module."_Used=".$pethMainPseConsumptionPower.";".($pethMainPsePower - $o_warning).";".($pethMainPsePower - $o_critical).";0;".$pethMainPsePower;
 						}
 					}
 				}
@@ -447,16 +453,16 @@ if ($final_status == 3) {
 }
 	
 if ($final_status == 2) {
-	print $output," : CRITICAL\n";
+	print $output," : CRITICAL",$output_pd,"\n";
 	exit $ERRORS{"CRITICAL"};
 }
 
 if ($final_status == 1) {
-	print $output," : WARNING\n";
+	print $output," : WARNING",$output_pd,"\n";
 	exit $ERRORS{"WARNING"};
 }
 
-print $output," : OK\n";
+print $output," : OK",$output_pd,"\n";
 exit $ERRORS{"OK"};
 
 
