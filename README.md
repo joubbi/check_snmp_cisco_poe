@@ -10,12 +10,19 @@ This plugin was created by Michiel Timmers. I have only added the performance da
 ## Usage
 In order to see help:
 ```sh
-./check_snmp_cisco_poe.pl --help
+$ ./check_snmp_cisco_poe.pl --help
+```
+
+Example output:
+```sh
+$ ./check_snmp_cisco_poe.pl -H 192.168.0.10 -l username -x password1 -X password2 -w 40 -c 30
+Module:2 Available:370 W, Used:19 W, Remaining:351 W : OK | M2_Used=19;330;340;0;370
 ```
 
 
 ## Screenshots
 ![](performance.png)
+
 ![](graph.png)
 
 
