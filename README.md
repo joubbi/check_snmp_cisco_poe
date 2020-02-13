@@ -27,6 +27,7 @@ Module:2 Available:370 W, Used:19 W, Remaining:351 W : OK | M2_Used=19;330;340;0
 
 
 ## Version history
+* 0.4 2020-02-12 Accept warn/crit percentages, support CISCO-POWER-ETHERNET-EXT-MIB, modified output.
 * 0.3 2019-03-06 Added performance data and modified output.
 * 0.2 2017-06-07 Fix for Cisco bug CSCtl11469. Data is now collected via a snmpwalk. Support for stacked switches.
 ___
