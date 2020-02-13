@@ -2,9 +2,11 @@
 # ============================================================================
 # ============================== INFO ========================================
 # ============================================================================
-# Version	: 0.3
-# Date		: March 6 2019
-# Author	: Michiel Timmers ( michiel.timmers AT gmx.net) +Farid Joubbi
+# Version	: 0.4
+# Date		: Feb 13 2020
+# Author	: Michiel Timmers ( michiel.timmers AT gmx.net)
+#				+ Farid Joubbi
+#				+ Paul Hobbs
 # Licence 	: GPL - summary below
 #
 # ============================================================================
@@ -12,6 +14,13 @@
 # ============================================================================
 #
 # Check the PoE availability of a Cisco switch
+#
+# version 0.4 by phobbs@solidelectronics.net:
+# - Warning/critical values now accept percentages
+# - Supports Cisco CISCO-POWER-ETHERNET-EXT-MIB OIDs and will automatically
+#   detect when they're available.
+# - Cleaned up script output
+#
 # version 0.3 By farid@joubbi.se:
 # - Added performace data
 # - Small modifications of output
@@ -69,12 +78,18 @@ my @Nagios_state 			= ("UNKNOWN","OK","WARNING","CRITICAL"); # Nagios states cod
 # ============================== OID VARIABLES ===============================
 # ============================================================================
 
-# System description 
-my $cisco_pethMainPseEntry_oid     		= "1.3.6.1.2.1.105.1.3.1.1"; 	# pethMainPseEntry
-my $cisco_pethMainPsePower_oid     		= "1.3.6.1.2.1.105.1.3.1.1.2";	# pethMainPsePower
-my $cisco_pethMainPseOperStatus_oid     	= "1.3.6.1.2.1.105.1.3.1.1.3";	# pethMainPseOperStatus
-my $cisco_pethMainPseConsumptionPower_oid	= "1.3.6.1.2.1.105.1.3.1.1.4";	# pethMainPseConsumptionPower
+# POWER-ETHERNET-MIB
+my $cisco_pethMainPseEntry_oid             = "1.3.6.1.2.1.105.1.3.1.1"; 	# pethMainPseEntry
+my $cisco_pethMainPsePower_oid             = "1.3.6.1.2.1.105.1.3.1.1.2";	# pethMainPsePower
+my $cisco_pethMainPseOperStatus_oid        = "1.3.6.1.2.1.105.1.3.1.1.3";	# pethMainPseOperStatus
+my $cisco_pethMainPseConsumptionPower_oid  = "1.3.6.1.2.1.105.1.3.1.1.4";	# pethMainPseConsumptionPower
 
+# CISCO-POWER-ETHERNET-EXT-MIB
+my $cisco_cpeExtMainPseEntry_oid              = "1.3.6.1.4.1.9.9.402.1.3.1";
+my $cisco_cpeExtMainPseEntPhyIndex_oid        = "1.3.6.1.4.1.9.9.402.1.3.1.1";
+my $cisco_cpeExtMainPsePwrMonitorCapable_oid  = "1.3.6.1.4.1.9.9.402.1.3.1.3";
+my $cisco_cpeExtMainPseEntryUsed_oid          = "1.3.6.1.4.1.9.9.402.1.3.1.4";
+my $cisco_cpeExtMainPseEntryAvailable_oid     = "1.3.6.1.4.1.9.9.402.1.3.1.5";
 
 # ============================================================================
 # ============================== GLOBAL VARIABLES ============================
@@ -97,9 +112,8 @@ my $v3protocols		= undef;	# V3 protocol list.
 my $o_authproto		= 'sha';	# Auth protocol
 my $o_privproto		= 'aes';	# Priv protocol
 my $o_privpass		= undef;	# priv password
-my $o_warning		= undef;	# Warning threshold
+my $o_warning		= undef;	# Warning threshold 
 my $o_critical		= undef;	# Critical threshold
-
 
 # ============================================================================
 # ============================== SUBROUTINES (FUNCTIONS) =====================
@@ -134,6 +148,7 @@ sub set_status { # Return worst status with this order : OK, unknown, warning, c
 
 # Subroutine: Check if SNMP table could be retrieved, otherwise give error
 sub check_snmp_result {
+	verb("checking result");
 	my $snmp_table		= shift;
 	my $snmp_error_mesg	= shift;
 
@@ -163,9 +178,9 @@ Options:
 -C, --community=COMMUNITY NAME
    Community name for the host's SNMP agent
 -w, --warning=WATT
-   Warning threshold in Watt
+   Warning threshold in Watts or percent
 -c, --critical=WATT
-   Critical threshold in Watt
+   Critical threshold in Watts or percent
 -1, --v1
    Use SNMPv1
 -2, --v2c
@@ -202,22 +217,22 @@ sub verb {
 sub check_options {
 	Getopt::Long::Configure ("bundling");
 	GetOptions(
-		'v'	=> \$o_verb,		'verbose'	=> \$o_verb,
-	        'h'     => \$o_help,    	'help'        	=> \$o_help,
-	        'H:s'   => \$o_host,		'hostname:s'	=> \$o_host,
-	        'p:i'   => \$o_port,   		'port:i'	=> \$o_port,
-	        'C:s'   => \$o_community,	'community:s'	=> \$o_community,
-		'l:s'	=> \$o_login,		'login:s'	=> \$o_login,
-		'x:s'	=> \$o_passwd,		'passwd:s'	=> \$o_passwd,
-		'X:s'	=> \$o_privpass,	'privpass:s'	=> \$o_privpass,
-		'L:s'	=> \$v3protocols,	'protocols:s'	=> \$v3protocols,   
-	        't:i'   => \$o_timeout,       	'timeout:i'     => \$o_timeout,
-		'V'	=> \$o_version,		'version'	=> \$o_version,
-		'6'     => \$o_domain,        	'use-ipv6'      => \$o_domain,
-		'1'     => \$o_version1,        'v1'            => \$o_version1,
-		'2'     => \$o_version2,        'v2c'           => \$o_version2,
-		'w:i'   => \$o_warning,         'warning:i'     => \$o_warning,
-		'c:i'   => \$o_critical,        'critical:i'    => \$o_critical
+		'v'	=> \$o_verb,          'verbose'     => \$o_verb,
+		'h'     => \$o_help,      'help'        => \$o_help,
+		'H:s'   => \$o_host,      'hostname:s'  => \$o_host,
+		'p:i'   => \$o_port,      'port:i'      => \$o_port,
+		'C:s'   => \$o_community, 'community:s' => \$o_community,
+		'l:s'   => \$o_login,     'login:s'     => \$o_login,
+		'x:s'   => \$o_passwd,    'passwd:s'    => \$o_passwd,
+		'X:s'   => \$o_privpass,  'privpass:s'  => \$o_privpass,
+		'L:s'   => \$v3protocols, 'protocols:s' => \$v3protocols,   
+		't:i'   => \$o_timeout,   'timeout:i'   => \$o_timeout,
+		'V'     => \$o_version,   'version'     => \$o_version,
+		'6'     => \$o_domain,    'use-ipv6'    => \$o_domain,
+		'1'     => \$o_version1,  'v1'          => \$o_version1,
+		'2'     => \$o_version2,  'v2c'         => \$o_version2,
+		'w:s'   => \$o_warning,   'warning:s'   => \$o_warning,
+		'c:s'   => \$o_critical,  'critical:s'  => \$o_critical
 	);
 
 
@@ -286,12 +301,12 @@ sub check_options {
 		}
 	}
 
-	if ( ! defined($o_warning) ) {
+	if ( ! defined($o_warning)) {
 		print_usage();
 		exit $ERRORS{"UNKNOWN"};
 	}
 
-	if ( ! defined($o_critical) ) {
+	if ( ! defined($o_critical)) {
 		print_usage();
 		exit $ERRORS{"UNKNOWN"};
 	}
@@ -304,7 +319,7 @@ sub check_options {
 
 check_options();
 
-# Check gobal timeout if SNMP screws up
+# Check global timeout if SNMP screws up
 if (defined($TIMEOUT)) {
 	verb("Alarm at ".$TIMEOUT." + ".$o_timeout);
 	alarm($TIMEOUT+$o_timeout);
@@ -391,20 +406,95 @@ my $exit_val=undef;
 # ============================================================================
 
 # Define variables
-my $output			= "";			
-my $output_pd			= "";
-my $final_status		= 0;
+my $output = "";			
+my $output_pd = "";
+my $final_status = 0;
 my $result_t;
 my $index;
 my @temp_oid;
+my $mode_cisco = 0;
 my ($pethMainPsePower,$pethMainPseOperStatus,$pethMainPseConsumptionPower,$module)=(undef,undef,undef,undef);
+my ($cpeExtMainPseEntPhyIndex, $cpeExtMainPsePwrMonitorCapable, $cpeExtMainPseEntryUsed, $cpeExtMainPseEntryAvailable) = (undef,undef,undef,undef);
+my $cisco_cpeExtMainPseEntry = undef;
+my $cisco_pethMainPseEntry = undef;
+my $warn_watts;
+my $crit_watts;
+my $max_pct = 0;
 
 # Get SNMP table(s) and check the result
-my $cisco_pethMainPseEntry =  $session->get_table(Baseoid => $cisco_pethMainPseEntry_oid);
+verb("Getting cpeExtMainPseEntry");
+$cisco_cpeExtMainPseEntry = $session->get_table(Baseoid => $cisco_cpeExtMainPseEntry_oid);
+&check_snmp_result($cisco_cpeExtMainPseEntry,$session->error);
+
+verb("Getting pethMainPseEntry");
+$cisco_pethMainPseEntry =  $session->get_table(Baseoid => $cisco_pethMainPseEntry_oid);
 &check_snmp_result($cisco_pethMainPseEntry,$session->error);
 
-if (defined($cisco_pethMainPseEntry)) {	
-	foreach my $key ( keys %$cisco_pethMainPseEntry) {
+if (defined($cisco_cpeExtMainPseEntry)) {
+	verb("Using Cisco cpeExtMainPse");
+	foreach my $key ( sort keys %$cisco_cpeExtMainPseEntry) {
+		if ($key =~ /$cisco_cpeExtMainPsePwrMonitorCapable_oid/) {
+			$key =~ s/$cisco_cpeExtMainPsePwrMonitorCapable_oid//;
+
+			$module = substr $key, 1;
+
+			# Set variables
+			$cpeExtMainPseEntryUsed = $$cisco_cpeExtMainPseEntry{$cisco_cpeExtMainPseEntryUsed_oid.$key};
+			$cpeExtMainPseEntryAvailable = $$cisco_cpeExtMainPseEntry{$cisco_cpeExtMainPseEntryAvailable_oid.$key};
+			my $cpeExtMainPseEntryTotal = $cpeExtMainPseEntryUsed + $cpeExtMainPseEntryAvailable;
+
+			if (defined($cpeExtMainPseEntryUsed) && defined($cpeExtMainPseEntryAvailable)) {
+
+				if (!looks_like_number($cpeExtMainPseEntryUsed) && !looks_like_number($cpeExtMainPseEntryAvailable)) {
+					$output = "Module:".$module." Device does not have PoE";
+				} else {
+					# Convert reported milliwatts to watts
+					$cpeExtMainPseEntryUsed = int($cpeExtMainPseEntryUsed / 1000);
+					$cpeExtMainPseEntryAvailable = int($cpeExtMainPseEntryAvailable / 1000);
+					$cpeExtMainPseEntryTotal = int($cpeExtMainPseEntryTotal / 1000);
+
+					# If warn/crit are percentages, translate into real watts.
+					if ($o_warning =~ m/%/) {
+						($warn_watts = $o_warning) =~ s/%//;
+						$warn_watts = $cpeExtMainPseEntryTotal * $warn_watts / 100;
+					} else {
+						$warn_watts = $cpeExtMainPseEntryTotal - $o_warning;
+					}
+					if ($o_critical =~ m/%/) {
+						($crit_watts = $o_critical) =~ s/%//;
+						$crit_watts = $cpeExtMainPseEntryTotal * $crit_watts / 100;
+					} else {
+						$crit_watts = $cpeExtMainPseEntryTotal - $o_critical;
+					}
+
+					# Determine overall result
+					if($cpeExtMainPseEntryUsed >= $warn_watts){
+						$final_status = &set_status(1,$final_status);
+					}
+					if($cpeExtMainPseEntryUsed >= $crit_watts){
+						$final_status = &set_status(2,$final_status);
+					}
+
+					# Record highest utilization for reporting
+					if (int($cpeExtMainPseEntryUsed/$cpeExtMainPseEntryTotal*100) > $max_pct) {
+						$max_pct = int($cpeExtMainPseEntryUsed/$cpeExtMainPseEntryTotal*100);
+					}
+
+					if ($output eq ""){
+						$output = "Module ".$module.": Used ".int($cpeExtMainPseEntryUsed/$cpeExtMainPseEntryTotal*100)."% (".$cpeExtMainPseEntryUsed."/".$cpeExtMainPseEntryTotal." W), Remaining: ".$cpeExtMainPseEntryAvailable." W";
+						$output_pd = " | M".$module."_Used=".$cpeExtMainPseEntryUsed.";".$warn_watts.";".$crit_watts.";0;".$cpeExtMainPseEntryTotal;
+					} else {
+						$output .= "\nModule ".$module.": Used ".int($cpeExtMainPseEntryUsed/$cpeExtMainPseEntryTotal*100)."% (".$cpeExtMainPseEntryUsed."/".$cpeExtMainPseEntryTotal." W), Remaining: ".$cpeExtMainPseEntryAvailable." W";
+						$output_pd .= " M".$module."_Used=".$cpeExtMainPseEntryUsed.";".$warn_watts.";".$crit_watts.";0;".$cpeExtMainPseEntryTotal;
+					}
+				}
+			}
+					
+		}
+	}
+} elsif (defined($cisco_pethMainPseEntry)) {
+	verb ("Using generic pethMainPse");
+	foreach my $key ( sort keys %$cisco_pethMainPseEntry) {
 		if ($key =~ /$cisco_pethMainPseOperStatus_oid/) {
 			$key =~ s/$cisco_pethMainPseOperStatus_oid//;	
 
@@ -424,20 +514,40 @@ if (defined($cisco_pethMainPseEntry)) {
 						$final_status = 2;
 						$output = "Module:".$module." Power Sourcing Equipment (PSE) is not on";
 					}else{
-						if($pethMainPsePower - $pethMainPseConsumptionPower < $o_warning){
-							$final_status = &set_status(1,$final_status);
+
+						# If warn/crit are percentages, translate into real watts.
+						if ($o_warning =~ m/%/) {
+							($warn_watts = $o_warning) =~ s/%//;
+							$warn_watts = $pethMainPsePower * $warn_watts / 100;
+						} else {
+							$warn_watts = $pethMainPsePower - $o_warning;
+						}
+						if ($o_critical =~ m/%/) {
+							($crit_watts = $o_critical) =~ s/%//;
+							$crit_watts = $pethMainPsePower * $crit_watts / 100;
+						} else {
+							$crit_watts = $pethMainPsePower - $o_critical;
 						}
 
-						if($pethMainPsePower - $pethMainPseConsumptionPower < $o_critical){
+						# Record highest utilization for reporting
+						if (int($pethMainPseConsumptionPower/$pethMainPsePower*100) > $max_pct) {
+							$max_pct = int($pethMainPseConsumptionPower/$pethMainPsePower*100);
+						}
+
+						# Determine overall result
+						if($pethMainPseConsumptionPower >= $warn_watts){
+							$final_status = &set_status(1,$final_status);
+						}
+						if($pethMainPseConsumptionPower >= $crit_watts){
 							$final_status = &set_status(2,$final_status);
 						}
 
 						if ($output eq ""){
 							$output = "Module:".$module." Available:".$pethMainPsePower." W, Used:".$pethMainPseConsumptionPower." W, Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
-							$output_pd = " | M".$module."_Used=".$pethMainPseConsumptionPower.";".($pethMainPsePower - $o_warning).";".($pethMainPsePower - $o_critical).";0;".$pethMainPsePower;
+							$output_pd = " | M".$module."_Used=".$pethMainPseConsumptionPower.";".$warn_watts.";".$crit_watts.";0;".$pethMainPsePower;
 						}else{
 							$output.= " - Module:".$module." Available:".$pethMainPsePower." W, Used:".$pethMainPseConsumptionPower." W, Remaining:".($pethMainPsePower - $pethMainPseConsumptionPower)." W";
-							$output_pd.= " M".$module."_Used=".$pethMainPseConsumptionPower.";".($pethMainPsePower - $o_warning).";".($pethMainPsePower - $o_critical).";0;".$pethMainPsePower;
+							$output_pd.= " M".$module."_Used=".$pethMainPseConsumptionPower.";".$warn_watts.";".$crit_watts.";0;".$pethMainPsePower;
 						}
 					}
 				}
@@ -447,6 +557,11 @@ if (defined($cisco_pethMainPseEntry)) {
 
 }else{
 	$output = "Device does not have PoE";
+	$max_pct = "N/A";
+}
+
+if ($max_pct ne "N/A") {
+	$max_pct .= "%";
 }
 
 if ($final_status == 3) {
@@ -455,16 +570,19 @@ if ($final_status == 3) {
 }
 	
 if ($final_status == 2) {
-	print $output," : CRITICAL",$output_pd,"\n";
+	#print $output," : CRITICAL",$output_pd,"\n";
+	print "PoE CRITICAL (".$max_pct.")\n".$output.$output_pd."\n";
 	exit $ERRORS{"CRITICAL"};
 }
 
 if ($final_status == 1) {
-	print $output," : WARNING",$output_pd,"\n";
+	#print $output," : WARNING",$output_pd,"\n";
+	print "PoE WARNING (".$max_pct.")\n".$output.$output_pd."\n";
 	exit $ERRORS{"WARNING"};
 }
 
-print $output," : OK",$output_pd,"\n";
+#print $output," : OK",$output_pd,"\n";
+print "PoE OK (".$max_pct.")\n".$output.$output_pd."\n";
 exit $ERRORS{"OK"};
 
 
